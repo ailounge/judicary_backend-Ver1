@@ -1,19 +1,20 @@
 from flask_mongoengine import MongoEngine
 from mongoengine.fields import DateTimeField
 from datetime import datetime
-from models.auth import Auth  # Assuming Auth model is correctly defined
+from models.auth import Auth  
 
 db = MongoEngine()
 
 class User(db.Document):
     auth_id = db.ReferenceField(Auth)
+    username=db.StringField(required=False)
     firstName = db.StringField(required=True)
     lastName = db.StringField(required=False)  
     gender = db.StringField(required=False)
     phone_number = db.StringField(required=False)
     cnic_number = db.StringField(required=True)
     organization = db.StringField(required=True)
-    ntn_number = db.StringField(required=True)
+    ntn_number = db.StringField(default='0')
     country = db.StringField(required=True)
     province = db.StringField(required=True)
     city = db.StringField(required=True)

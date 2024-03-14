@@ -1,5 +1,5 @@
 import os
-
+from dotenv import load_dotenv
 # flask imports
 from flask import Flask
 from flask_mongoengine import MongoEngine
@@ -9,7 +9,7 @@ from flask import request, jsonify, session
 
 # Environment imports
 import server_reloader
-from dotenv import load_dotenv
+
 
 
 #rRoutes Imports
@@ -22,15 +22,17 @@ load_dotenv()
 app = Flask(__name__)
 
 # Update the MONGODB_SETTINGS to use the provided connection string
-MondoDBconnectionStringNew = os.getenv('MondoDBconnectionStringNew')
+# MongodbURLNew = os.getenv('MongodbURLNew')
+
+
 app.config['MONGODB_SETTINGS'] = {
-    'host': MondoDBconnectionStringNew
+    'host': 'mongodb+srv://Alucard008:UiIhOdwPy1xuM8jy@judiciarycluster.4jhslpg.mongodb.net/Judiciary_Database?retryWrites=true&w=majority'
 }
 
 
-jwtSecertKey = os.getenv('jwtSecertKey')
+jwtSecretKey = os.getenv('jwtSecretKey')
 # Set a secret key for your application
-app.config['JWT_SECRET_KEY'] = jwtSecertKey
+app.config['JWT_SECRET_KEY'] = jwtSecretKey
 app.config['JWT_HEADER_NAME'] = 'Authorization'
 # Optionally, configure other JWT settings
 app.config['JWT_TOKEN_LOCATION'] = ['headers']
@@ -41,7 +43,7 @@ jwt = JWTManager(app)
 
 # Custom error handler for JWT errors
 @jwt.expired_token_loader
-def expired_token_callback():
+def expired_token_callback(jwt_header, jwt_data):
     return jsonify({'error': 'Token has expired'}), 401
 
 @jwt.invalid_token_loader
@@ -51,6 +53,7 @@ def invalid_token_callback(error):
 @jwt.unauthorized_loader
 def unauthorized_callback(error):
     return jsonify({'error': 'Unauthorized access'}), 401
+
 
 
 

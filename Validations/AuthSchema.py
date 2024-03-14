@@ -2,6 +2,7 @@ from marshmallow import Schema, fields, ValidationError, validates
 from models.users import User
 
 class AuthSchema(Schema):
+    username = fields.Str(required=False)
     firstName = fields.Str(required=False)
     lastName = fields.Str(required=False)
     gender = fields.Str(required=False)

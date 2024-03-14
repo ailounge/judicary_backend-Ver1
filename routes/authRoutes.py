@@ -1,5 +1,6 @@
 import os
 import bcrypt
+from functools import wraps
 from flask import request, jsonify, session
 from dotenv import load_dotenv
 from models.users import User
@@ -12,7 +13,7 @@ from Validations.LoginSchema import LoginSchema
 
 #load  env variables
 load_dotenv()
-jwtSecertKey = os.getenv('jwtSecertKey')
+jwtSecretKey = os.getenv('jwtSecretKey')
 
 def authRoutes(app):
     @app.route('/login', methods=['POST'])
@@ -43,12 +44,12 @@ def authRoutes(app):
                     'email': email,
                     'exp': expiration_time
                 }
-                token = jwt.encode(token_payload, jwtSecertKey, algorithm='HS256')
+                token = jwt.encode(token_payload, jwtSecretKey, algorithm='HS256')
                 
                 # Include both auth_id and profile_id inside user_profile object
                 user_profile_data = user_profile.to_json() if user_profile else {}
                 user_profile_data['auth_id'] = str(auth_user.id) if auth_user else None
-                user_profile_data['profile_id'] = str(user_profile.id) if user_profile else None
+                user_profile_data['user_id'] = str(user_profile.id) if user_profile else None
                 
                 # Construct response containing user profile and token
                 response_data = {
@@ -101,38 +102,61 @@ def authRoutes(app):
             auth.save()
 
             # Create User document
-            
             user_data = {'auth_id': auth.id}
-            if 'firstName' in validated_auth_data:
-                user_data['firstName'] = validated_auth_data['firstName']
-            if 'lastName' in validated_auth_data:
-                user_data['lastName'] = validated_auth_data['lastName']
-            if 'gender' in validated_auth_data:
-                user_data['gender'] = validated_auth_data['gender']
-            if 'phone_number' in validated_auth_data:
-                user_data['phone_number'] = validated_auth_data['phone_number']
-            if 'cnic_number' in validated_auth_data:
-                user_data['cnic_number'] = validated_auth_data['cnic_number']
-            if 'organization' in validated_auth_data:
-                user_data['organization'] = validated_auth_data['organization']
-            if 'ntn_number' in validated_auth_data:
-                user_data['ntn_number'] = validated_auth_data['ntn_number']
-            if 'country' in validated_auth_data:
-                user_data['country'] = validated_auth_data['country']
-            if 'province' in validated_auth_data:
-                user_data['province'] = validated_auth_data['province']
-            if 'city' in validated_auth_data:
-                user_data['city'] = validated_auth_data['city']
-            if 'address' in validated_auth_data:
-                user_data['address'] = validated_auth_data['address']
-            if 'subscription' in validated_auth_data:
-                user_data['subscription'] = validated_auth_data['subscription']
+            user_fields = ['firstName', 'lastName', 'gender', 'phone_number', 'cnic_number', 'organization',
+                        'ntn_number', 'country', 'province', 'city', 'address', 'subscription']
+            for field in user_fields:
+                if field in validated_auth_data:
+                    user_data[field] = validated_auth_data[field]
 
+            # If 'ntn_number' is empty, set it to '0'
+            if 'ntn_number' in user_data and not user_data['ntn_number']:
+                user_data['ntn_number'] = '0'
 
             user = User(**user_data)
             user.save()
 
-            return jsonify({'message': 'User registered successfully'}), 201
+            return jsonify({'message': 'User registered successfully'}), 200
         except Exception as e:
             return jsonify({'error': str(e), 'status_code': 500}), 500
 
+    
+    @app.route('/authenticate', methods=['GET'])
+    @token_required
+    def authenticate():
+        # Access the current user from the request context
+        current_user = request.current_user
+        return jsonify({'message': 'Token is valid', 'current_user_id': str(current_user.id)}), 200
+
+def token_required(func):
+    @wraps(func)
+    def decorated(*args, **kwargs):
+        token = None
+
+        # Check if the request contains a token in the Authorization header
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(" ")[1]
+
+        if not token:
+            return jsonify({'error': 'Token is missing'}), 401
+
+        try:
+            # Verify and decode the token
+            data = jwt.decode(token, jwtSecretKey, algorithms=['HS256'])
+            current_user = Auth.objects(id=data['sub']).first()
+        except jwt.ExpiredSignatureError:
+            return jsonify({'error': 'Token has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'error': 'Invalid token'}), 401
+
+        if not current_user:
+            return jsonify({'error': 'User not found'}), 401
+
+        # Add the current user to the request context
+        request.current_user = current_user
+        return func(*args, **kwargs)
+
+    return decorated
+
+
+   
