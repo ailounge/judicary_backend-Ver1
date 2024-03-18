@@ -8,6 +8,12 @@ from  datetime import datetime
 from bson.objectid import ObjectId
 from mongoengine.queryset.visitor import Q
 import json
+import os
+from bucket.google_bucket import upload_to_gcs
+
+from dotenv import load_dotenv
+# Load environment variables from .env file
+load_dotenv()
 
 def userRoutes(app):
     @app.route('/users', methods=['GET'])
@@ -85,6 +91,7 @@ def userRoutes(app):
                 AppealCourtNames=data.get('AppealCourtNames', []),
                 CaseApproval=data.get('CaseApproval', ''),
                 ExtractiveSummary=data.get('ExtractiveSummary', ''),
+                FileURL=data.get('FileURL',''),
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow()
             )
@@ -118,13 +125,13 @@ def userRoutes(app):
                     Filters.objects().update_one(add_to_set__CaseTypeFilters=case_type, **update_operations)
 
             
-            return jsonify(new_case.to_json()), 201  # Return the JSON representation of the new case with status code 201 (Created)
+            return jsonify("message" , "Case verified & added successfuly"), 200  # Return the JSON representation of the new case with status code 201 (Created)
         except Exception as e:
             print("Error occurred:", str(e))
             return jsonify({'error': str(e), "status_code": 500}), 500  # Return error response with status code 500 if an error occurs
 
     @app.route('/getFilters', methods=['GET'])
-    @jwt_required()
+    # @jwt_required()
     def get_filters():
         try:
             # Attempt to retrieve the single Filters document
@@ -212,6 +219,7 @@ def userRoutes(app):
                     "AppealCourtNames": case.AppealCourtNames or [],
                     "CaseApproval": case.CaseApproval if case.CaseApproval else '',
                     "ExtractiveSummary": case.ExtractiveSummary if case.ExtractiveSummary else '',
+                    "FileURL":case.FileURL if case.FileURL else '',
                     "created_at": case.created_at.isoformat() if case.created_at else '',
                     "updated_at": case.updated_at.isoformat() if case.updated_at else '',
                 }
@@ -231,3 +239,31 @@ def userRoutes(app):
         except Exception as e:
             print("Error occurred:", str(e))
             return jsonify({'error': str(e), "status_code": 500})
+
+
+    @app.route('/uploadFile', methods=['POST'])
+    @jwt_required()
+    def fileUpload():
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part in the request'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+
+        _, file_extension = os.path.splitext(file.filename)
+        file_extension = file_extension.lower()
+
+        if file_extension not in ['.pdf', '.docx', '.txt']:
+            return jsonify({'error': 'File format not supported'}), 400
+        
+        # Define the bucket name and credentials file path
+        bucket_name = os.getenv('BUCKET_NAME', 'judiciary_bucket')
+        credentials_file = os.path.join(app.root_path, 'google_bucket_credentials.json')
+
+
+        # Call the function to upload the file stream to GCS
+        URL = upload_to_gcs(bucket_name, file, file.filename, credentials_file)
+
+        return jsonify({'message': 'File Uploaded successfully to GCS' , "URL" : URL}), 200
+                

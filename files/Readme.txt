@@ -1,0 +1,3 @@
+I was trying to create a database on TUKL's PC but was unable to install MongoDB due to insufficient space. Firstly, you have to run FilesIntoMongoDB.py to create a database and put all our data into it. Then you can use SCAPI.py. There are three main functions which utilize the DLLM Class. The first one is SearchKeyWord for our Search Keyword feature. The second is OnDetail when OnDetail is Clicked. It basically returns files which are similar to the current one. The third is GenerateSumIE which generates Summary and IR for the currently uploaded file.At the bottom of the SCAPI.py file, you can find examples of how to use these functions.
+
+If you want to try it on TUKL's PC, here is the AnyDesk ID: 638072469

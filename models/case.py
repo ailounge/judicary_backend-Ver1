@@ -30,6 +30,7 @@ class Case(db.Document):
     AppealCourtNames = ListField(StringField())
     CaseApproval = StringField()
     ExtractiveSummary = StringField()
+    FileURL = StringField()
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
 
@@ -61,6 +62,7 @@ class Case(db.Document):
             "AppealCourtNames": self.AppealCourtNames,
             "CaseApproval": self.CaseApproval,
             "ExtractiveSummary": self.ExtractiveSummary,
+            "FileURL":self.FileURL,
             "created_at": self.created_at, 
             "updated_at": self.updated_at
         }
