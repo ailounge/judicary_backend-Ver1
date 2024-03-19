@@ -80,8 +80,7 @@ class DLLM:
         test_dataset = test_dataset.map(generate_answer)
 
 
-
-
+        '''
         # test dummy later to me removed 
 
         if prefix =='IE':
@@ -92,11 +91,12 @@ class DLLM:
             summar = 'IN THE SUPREME COURT OF PAKISTAN (Appellate Jurisdiction) Present: Mr. Justice Qazi Faez Isa Mr. Supreme Court Sardar Tariq Masood CIVIL APPEAL NO. 472 OF 2013 (On appeal against the judgment dated 6.02.2013 passed by the Lahore High Court, Lah., in C. R. No. 489/2009) Contract Act (XXIII of 1872) Ss. 12 (2), 25 & 115 Relinquishment of right of inheritance, relied upon from the petitioner’s side, even if proved against the respondent, had to be found against public policy Dispute between two sisters was contrary to public policy and contrary to shariah Appellate Court had wrongly exercised its jurisdiction, had misread evidence, disregarded crucial evidence, relyd on the purported compromise application which Mirza Abid Baig could not establish was part of the Court record, gave credence to purported agreement without the concomitant obligation of making payment and wrongly assumed that a valuable claim was relinquished without proof and without consideration. Umar Bakhsh v Azim Khan1 and Ghulam Ali v Ghuam Sarwar Naqvi (Mst.) 4 ref. Muhammad Atif Amin, ASC Mr. M. S. Khattak, AOR Respondent Nos. 1(a) to (d) Mr. Mustafa Ramday, A SC assisted by Mr. Zaafir Khan, Ms. Zoe Khan and Mr. Akbar Khan, Advocates Syed Rifaqat Hussain Shah, Aor Respondents No. 2-5: Ex parte Dates of Hearing: 10th and 12th February 2020 JUDGMENT QAZI FAEZ ISSA, J. Mirza Sultan Baig died on 22nd March 1975 leaving behind a widow Mst Tahira Sultana, two sons, namely Mirza Abbas Baig and Mirza Imran Baig, and four daughters, Abida Azam, Zahida Sabir, Naveeda Sultan (Pasha) and Fakhira TariQ. A suit for the administration of the estate of their father and rendition of accounts'
             output_summaries = [{"output": summar}]
 
+        '''
 
 
 
         # Convert the output summaries to JSON format
-        #output_summaries = [{"output": summary} for summary in test_dataset["predicted_abstract"]]
+        output_summaries = [{"output": summary} for summary in test_dataset["predicted_abstract"]]
         return json.dumps({"device": device, "predicted": output_summaries})
 
     
