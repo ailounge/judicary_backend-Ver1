@@ -47,10 +47,10 @@ class DLLM:
         # Determine the prefix text and model based on the specified prefix
         if prefix == "Sum":
             prefix_text = "Summary : "
-            model_name = "modelsLocation\Summary_Model"
+            model_name = "modelsLocation\Summarization"
         elif prefix == "IE":
             prefix_text = "Extract Crucial Information : "
-            model_name = "modelsLocation\Information_Model"  # Assuming model 2 is T5-base
+            model_name = "modelsLocation\Information"  # Assuming model 2 is T5-base
         else:
             raise ValueError("Invalid prefix. Choose 'Sum' for summarization or 'IE' for extraction.")
         
