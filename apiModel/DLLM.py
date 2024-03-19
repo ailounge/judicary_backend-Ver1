@@ -42,6 +42,7 @@ class DLLM:
             device = "cuda"
         else:
             device = "cpu"
+        print(device)
 
         # Determine the prefix text and model based on the specified prefix
         if prefix == "Sum":
@@ -73,7 +74,7 @@ class DLLM:
                predicted_summary_ids = model.generate(input_ids, attention_mask=attention_mask)
 
             # Generate a dummy abstract for illustration (Replace with actual model generation)
-            batch["predicted_abstract"] = tokenizer.decode([2,4,3,3], skip_special_tokens=True)
+            batch["predicted_abstract"] = tokenizer.decode(predicted_summary_ids[0], skip_special_tokens=True)
             return batch
 
         # Apply the function to generate abstracts for the test dataset
@@ -97,7 +98,7 @@ class DLLM:
 
         # Convert the output summaries to JSON format
         output_summaries = [{"output": summary} for summary in test_dataset["predicted_abstract"]]
-       
+        del model
         return json.dumps({"device": device, "predicted": output_summaries})
         
     
