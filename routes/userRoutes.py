@@ -1,6 +1,7 @@
 from flask import request, jsonify
-from files.LMSCPAPI.DLLM import DLLM
-from files.LMSCPAPI.SCPAPI import GenerateSumIE
+import apiModel
+from apiModel.DLLM import DLLM
+from apiModel.SCPAPI import GenerateSumIE
 from models.users import User
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
@@ -264,23 +265,14 @@ def userRoutes(app):
         doc = file.read().decode('utf-8')
         #return jsonify({'str':doc})
         #Sum = request.form.get('Sum', 'both')
-        Sum='both'
-        if Sum.lower() in ['sum', 'ie', 'both']:
-            if Sum.lower() == 'both':
-                summary, ie = GenerateSumIE(doc, DLLM, Sum)
-                # will return this one
-                return jsonify({'summary': summary, 'ie': ie})
-            else:
-                output = GenerateSumIE(doc, dllm, Sum)
-                return jsonify({Sum.lower(): output})
-        else:
-                return jsonify({'error': 'Invalid value for Sum parameter'}), 400
+        summary, ie = GenerateSumIE(doc, dllm)
+        # will return this one
+        return jsonify({'summary': summary, 'ie': ie})
 
 
 
 
-
-        ''''''
+        '''
         # Define the bucket name and credentials file path
         bucket_name = os.getenv('BUCKET_NAME', 'judiciary_bucket')
         credentials_file = os.path.join(app.root_path, 'google_bucket_credentials.json')
@@ -290,4 +282,4 @@ def userRoutes(app):
         URL = upload_to_gcs(bucket_name, file, file.filename, credentials_file)
 
         return jsonify({'message': 'File Uploaded successfully to GCS' , "URL" : URL}), 200
-                
+        '''       

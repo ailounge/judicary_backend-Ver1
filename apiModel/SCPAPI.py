@@ -1,5 +1,4 @@
 from pymongo import MongoClient
-from DLLM import DLLM
 import json
 # Search Keyword
 def SearchKeyWord(Main_Search,CheckBox,dllm):
@@ -125,35 +124,4 @@ def insert_file_to_database(filename, content, summary, information,dllm):
 
 
 
-
-# Example usage:
-if __name__ == "__main__":
-    dllm = DLLM()
-
-    '''
-    #Test Search by keyword
-    indexes,total = SearchKeyWord("Crime ",["Qazi Faez","Islamabad"],dllm)
-    print(indexes, total)
-    '''
-
-
-
-    '''
-    #Test  When Click on Detail:  Since this is yet to be completed in module 3. this will return 3 files as dummy
-    indexes,total = OnDetail("Test or number",dllm)
-    print(indexes,total)
-
-    '''
-
-
-
-
-
-    '''  '''
-    # Test function when  document is uploaded .  for now it only accepts Text and returns dummy text 
-    sum,ie = GenerateSumIE(["Document1 is very good document"],dllm)
-    print(sum,ie)
-
-
-  
 
