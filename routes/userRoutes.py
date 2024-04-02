@@ -11,8 +11,12 @@ from  datetime import datetime
 from bson.objectid import ObjectId
 from mongoengine.queryset.visitor import Q
 import json
+from docx import Document
 import os
+import io
 from bucket.google_bucket import upload_to_gcs
+from werkzeug.utils import secure_filename
+import bson
 
 from dotenv import load_dotenv
 # Load environment variables from .env file
@@ -100,6 +104,7 @@ def userRoutes(app):
             )
             
             new_case.save()  # Save the new case to the database
+            created_case_id = str(new_case.id) 
             
             new_judge_names = data.get('JudgeNames', [])
             new_locations = data.get('Locations', [])
@@ -128,10 +133,30 @@ def userRoutes(app):
                     Filters.objects().update_one(add_to_set__CaseTypeFilters=case_type, **update_operations)
 
             
-            return jsonify("message" , "Case verified & added successfuly"), 200  # Return the JSON representation of the new case with status code 201 (Created)
+            return jsonify(message="Case verified & added successfully", case_id=created_case_id), 200  # Return the JSON representation of the new case with status code 201 (Created)
         except Exception as e:
             print("Error occurred:", str(e))
             return jsonify({'error': str(e), "status_code": 500}), 500  # Return error response with status code 500 if an error occurs
+
+
+    @app.route('/getCaseFromId/<string:case_id>', methods=['GET'])
+    @jwt_required()
+    def get_case_from_id(case_id):
+        try:
+            # Validate the ObjectId
+            if not bson.ObjectId.is_valid(case_id):
+                return jsonify({'error': 'Invalid ID format'}), 400
+
+            # Attempt to find the case by its ID
+            case = Case.objects(id=case_id).first()
+            if case:
+                return jsonify(case.to_json()), 200
+            else:
+                return jsonify({'error': 'Case not found'}), 404
+        except Exception as e:
+            print(f"Error occurred: {str(e)}")
+            return jsonify({'error': str(e), 'status_code': 500}), 500
+
 
     @app.route('/getFilters', methods=['GET'])
     # @jwt_required()
@@ -252,34 +277,56 @@ def userRoutes(app):
             return jsonify({'error': 'No file part in the request'}), 400
         
         file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No selected file'}), 400
-
+        file.filename = secure_filename(file.filename)
         _, file_extension = os.path.splitext(file.filename)
         file_extension = file_extension.lower()
 
         if file_extension not in ['.pdf', '.docx', '.txt']:
             return jsonify({'error': 'File format not supported'}), 400
-        
-         # Read the content of the file
-        doc = file.read().decode('utf-8')
-        #return jsonify({'str':doc})
-        #Sum = request.form.get('Sum', 'both')
-        summary, ie = GenerateSumIE(doc, dllm)
-        # will return this one
-        return jsonify({'summary': summary, 'ie': ie})
 
+        if file_extension == '.txt':
+            # Convert .txt content to .docx
+            doc = Document()
+            txt_content = file.read().decode('utf-8')
+            summary, ie = GenerateSumIE(txt_content, dllm)
+            doc.add_paragraph(txt_content)
 
+            # Prepare the byte stream to write the .docx content
+            docx_buffer = io.BytesIO()
+            doc.save(docx_buffer)
+            docx_buffer.seek(0)  # Reset the buffer cursor to the start
 
+            # Create a .docx filename
+            docx_filename = os.path.splitext(file.filename)[0] + '.docx'
+            # Set the file_stream to the docx_buffer for uploading
+            file_stream = docx_buffer
+        else:
+            # Handle other file extensions (.pdf, .docx) without conversion
+            # Set the file_stream to the uploaded file's stream
+            file_stream = file.stream
+            docx_filename = file.filename
+            summary, ie = GenerateSumIE(file_stream, dllm)
 
-        '''
-        # Define the bucket name and credentials file path
-        bucket_name = os.getenv('BUCKET_NAME', 'judiciary_bucket')
-        credentials_file = os.path.join(app.root_path, 'google_bucket_credentials.json')
-
+        # parsed_ie = json.loads(ie['predicted'])
+    
+    
+        # ie = {
+        #     "device": "cuda",
+        #     "predicted": [
+        #         {
+        #             "output": "{\"JudgeNames\": [\"MUHAMMAD-YAQUB-ALI\"], \"People\": [\"Harnam-Singh\", \"Leave-refused.\"], \"Organizations\": [\"Custodian-of-Evacuee-Property\"], \"Locations\": [\"Pakistan\"], \"CaseNumbers\": [\"Writ-Petition-in-the-High-Court\"], \"Appellants\": [\"Leave-refused.\"], \"Respondents\": [\"Bagat-Sohr\"], \"Money\": [\"Rs.-35,255\"], \"Case Approval\": [\"Leave-refused.\"]}"
+        #         }
+        #     ]
+        # },
+        # summary = {
+        #     "device": "cuda",
+        #     "predicted": [
+        #         {
+        #             "output": "Summary : MUHAMMAD YAQUB ALI, J.The petitioner claimed that Harnam Singh and others evacuee owners had entered into an agreement for sale of the land in dispute in favour of her husband Baga Singh who embraced Islam after Partition and died in Pakistan. Out of the sale price fixed at Rs. 35,255, baga Singh had allegedly paid to the vendors on the 6th January 1947, a sum of Rs. 16,000. Long after the prescribed period of limitation for filing a suit for specific performance had expired, the petitioner applied to the Deputy Rehabilitation Commissioner under section 16 of the Pakistan (Administration of Evacued Property) Act XII of 1957, for permission to file a suo motu jurisdiction under section 12 of the Land Settlement Act. It was contended that the Chief Settlement Commissioner could not intervene as no order was passed by any Settlement authority and in any case nine months having expired when the decree was executed the order passed by the Revenue authorities sanctioning the mutation of land in her favour could not be revised under S. 19 (i) of the Law Settlement Act No Court, tribunal or authority could pass any judgment, decree or order in respect of it. An exception was made in case of persons who had before the bar was imposed on alienation of evacee properties entered into valid agreements for their purchase and had passed whole or part of the consideration. The holder of such an agreement could file suit with the prior permission of the Custodian of escuee property If the suit was decreed it was necessary to again obtain confirma tion of the decree by the Custidian of Escuevaee Property other wise it could no be executed."
+        #         }
+        #     ]
+        # }
 
         # Call the function to upload the file stream to GCS
-        URL = upload_to_gcs(bucket_name, file, file.filename, credentials_file)
-
-        return jsonify({'message': 'File Uploaded successfully to GCS' , "URL" : URL}), 200
-        '''       
+        URL = upload_to_gcs(os.getenv('BUCKET_NAME', 'judiciary_bucket'), file_stream, docx_filename, os.path.join(app.root_path, 'google_bucket_credentials.json'))
+        return jsonify({"summary": summary , "ie": ie, 'message': 'File Uploaded successfully to GCS', 'URL': URL}), 200

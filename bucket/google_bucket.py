@@ -9,7 +9,7 @@ def upload_to_gcs(bucket_name, file_stream, destination_blob_name, credentials_f
 
     # Upload the file to the bucket
     blob = bucket.blob(destination_blob_name)
-    blob.upload_from_string(file_stream.read(), content_type=file_stream.content_type)
+    blob.upload_from_file(file_stream, content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
 
     print(f"File uploaded to gs://{bucket_name}/{destination_blob_name}")
 
