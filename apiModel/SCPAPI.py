@@ -1,4 +1,4 @@
-from DLLM import DLLM
+from pymongo import MongoClient
 import json
 # Search Keyword
 def SearchKeyWord(Main_Search,CheckBox,dllm):
@@ -24,7 +24,7 @@ def SearchKeyWord(Main_Search,CheckBox,dllm):
     data = json.loads(dllm.find_files_by_indexes(ids))
     for entry in data:
         entry['ie'] = dllm.convert_to_json(entry['ie'])
-    return [json.dumps(data) ,  len(data)]
+    return [data ,  len(data)]
 
     
 
@@ -55,7 +55,7 @@ def OnDetail(id,dllm):
         entry['ie'] = dllm.convert_to_json(entry['ie'])
     #print(data)
     #data = [entry for entry in data]
-    return [json.dumps(data), len(data)]
+    return [data, len(data)]
 
 
 
@@ -86,7 +86,7 @@ def GenerateSumIE(doc,dllm,Sum='both'):
 
         ie = json.loads(ie)
         ie['predicted'][0]['output'] = dllm.convert_to_json(ie['predicted'][0]['output'] )
-        return sum,ie
+        return json.loads(sum),ie
 
 
     
@@ -98,39 +98,30 @@ def GenerateSumIE(doc,dllm,Sum='both'):
 
 
 
+def insert_file_to_database(filename, content, summary, information,dllm):
+    # Connect to MongoDB
+    client = MongoClient('mongodb://localhost:27017/')  # Change the connection string as per your MongoDB setup
+    db = client['JudiciaryCases']  # Use a valid database name without spaces
+    collection = db['files']  # Choose a collection name, e.g., 'files'
+    
+    # Get the count of existing documents in the collection
+    start_id = collection.count_documents({}) + 1
+    
+    # Prepare the data to be inserted
+    data = {
+        'filename': filename,
+        'content': content,
+        'summary': summary,
+        'information': information,  # Convert information to JSON string
+        'id': start_id
+    }
+    
+    # Insert the data into the database
+    collection.insert_one(data)
+    
+    # Close the database connection
+    client.close()
 
 
 
-
-
-# Example usage:
-if __name__ == "__main__":
-    dllm = DLLM()
-
-    '''
-    #Test Search by keyword
-    indexes,total = SearchKeyWord("Crime ",["Qazi Faez","Islamabad"],dllm)
-    print(indexes, total)
-    '''
-
-
-
-    '''
-    #Test  When Click on Detail:  Since this is yet to be completed in module 3. this will return 3 files as dummy
-    indexes,total = OnDetail("Test or number",dllm)
-    print(indexes,total)
-
-    '''
-
-
-
-    SearchKeyWord('Hello',"hello",dllm)
-
-    '''  '''
-    # Test function when  document is uploaded .  for now it only accepts Text and returns dummy text 
-    # sum,ie = GenerateSumIE(["Document1 is very good document"],dllm)
-    # print(sum,ie)
-
-
-  
 
